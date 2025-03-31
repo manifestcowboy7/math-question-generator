@@ -1,201 +1,319 @@
 // src/App.js
-
-// --- Ensure ALL necessary hooks are imported from 'react' ---
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// --- End Import Correction ---
-
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import FilterPanel from './components/FilterPanel/FilterPanel';
-import QuestionList from './components/QuestionList/QuestionList';
-import SelectedQuestions from './components/SelectedQuestions/SelectedQuestions';
-import DocumentSettingsModal from './components/DocumentSettingsModal/DocumentSettingsModal';
-import { fetchQuestions, fetchFilterOptions } from './services/questionService';
-import { generateDocument } from './services/documentGenerator';
-import styles from './App.module.css';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Import useMemo
+import './App.css';
+import { supabase } from './supabaseClient';
+import { BsTag, BsBookmark, BsLightning } from 'react-icons/bs';
+import parseMathText from './utils/mathParser';
 
 function App() {
-  // --- STATE DEFINITIONS (Now useState is defined) ---
+  // State
   const [allQuestions, setAllQuestions] = useState([]);
   const [filteredQuestions, setFilteredQuestions] = useState([]);
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState([]);
-  const [filterCriteria, setFilterCriteria] = useState({
-    standard: '', learningObjective: '', keyword: '', topic: '',
-  });
-  const [filterOptions, setFilterOptions] = useState({
-    standards: [], objectives: [], topics: [],
-  });
-  const [isLoading, setIsLoading] = useState(true); // useState needs to be imported
+  const [availableTopics, setAvailableTopics] = useState([]);
+  // Filter State
+  const [selectedTopics, setSelectedTopics] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDOK, setSelectedDOK] = useState(null);
+  const [selectedStandard, setSelectedStandard] = useState(null);
+  // UI State
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  // --- End State Definitions ---
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState([]); // For right panel
 
-  // --- CALLBACK FUNCTION DEFINITIONS ---
-  const handleFilterChange = useCallback((newFilters) => {
-      setFilterCriteria(prev => ({ ...prev, ...newFilters }));
-  }, []);
+  // --- Fetch Available Topics ---
+  useEffect(() => {
+    const fetchTopics = async () => {
+       setError(null);
+       try {
+         const { data, error } = await supabase.from('questions').select('topic');
+         if (error) throw error;
+         if (data) {
+           const uniqueTopics = [...new Set(data.map(item => item.topic).filter(topic => topic))];
+           setAvailableTopics(uniqueTopics.sort());
+         }
+       } catch (error) {
+         console.error('Error fetching topics:', error);
+         setError('Could not fetch topics. Please try refreshing.');
+         setAvailableTopics([]);
+       }
+    };
+    fetchTopics();
+  }, []); // Empty dependency array means run once on mount
 
-  const handleSelectQuestion = useCallback((questionId) => {
-    setSelectedQuestionIds(prev =>
-      prev.includes(questionId)
-        ? prev.filter(id => id !== questionId)
-        : [...prev, questionId]
+  // --- Fetch Questions ---
+  const fetchQuestions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const selectColumns = 'id, question_text, topic, standard, learning_objective, dok';
+      let query = supabase.from('questions').select(selectColumns);
+
+      if (selectedTopics.length > 0) {
+        query = query.in('topic', selectedTopics);
+      }
+      if (selectedDOK !== null) {
+        query = query.eq('dok', selectedDOK);
+      }
+      if (selectedStandard !== null) {
+        query = query.eq('standard', selectedStandard);
+      }
+      query = query.order('topic');
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setAllQuestions(data || []);
+
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      setError('Could not fetch questions. Please check your connection or filters.');
+      setAllQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedTopics, selectedDOK, selectedStandard]);
+
+  // --- Trigger Fetch Questions ---
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  // --- Apply Client-Side Filtering (Keyword Search) ---
+  useEffect(() => {
+    let tempFiltered = allQuestions;
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      tempFiltered = tempFiltered.filter(q =>
+         (q.question_text && q.question_text.toLowerCase().includes(lowerCaseSearchTerm)) ||
+         (q.topic && q.topic.toLowerCase().includes(lowerCaseSearchTerm)) ||
+         (q.standard && q.standard.toLowerCase().includes(lowerCaseSearchTerm)) ||
+         (q.learning_objective && q.learning_objective.toLowerCase().includes(lowerCaseSearchTerm)) ||
+         (q.dok && String(q.dok).toLowerCase().includes(lowerCaseSearchTerm))
+      );
+    }
+    setFilteredQuestions(tempFiltered);
+  }, [searchTerm, allQuestions]);
+
+  // --- Event Handlers --- (Corrected Definitions)
+
+  const handleTopicChange = (event) => {
+    const { value, checked } = event.target;
+    setSelectedDOK(null);
+    setSelectedStandard(null);
+    setSelectedTopics(prevSelected =>
+      checked ? [...prevSelected, value] : prevSelected.filter(topic => topic !== value)
     );
-  }, []);
-
-   const handleRemoveSelected = useCallback((questionId) => {
-    setSelectedQuestionIds(prev => prev.filter(id => id !== questionId));
-  }, []);
-
-   const onDragEnd = useCallback((result) => {
-     const { source, destination } = result;
-    if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) { return; }
-    if (source.index < 0 || source.index >= selectedQuestionIds.length || destination.index < 0) { console.error("Invalid index in onDragEnd:", source, destination); return; }
-    const items = Array.from(selectedQuestionIds);
-    const [reorderedItem] = items.splice(source.index, 1);
-    const validDestinationIndex = Math.min(items.length, destination.index);
-    items.splice(validDestinationIndex, 0, reorderedItem);
-    setSelectedQuestionIds(items);
-  }, [selectedQuestionIds]);
-
-  const handleOpenSettings = () => {
-     if (selectedQuestions.length === 0) { alert("Please select at least one question."); return; }
-     setShowSettingsModal(true);
   };
 
-  const handleGenerateDocument = async (settings) => {
-     setShowSettingsModal(false);
-     setIsGenerating(true);
-     setError(null);
-     console.log("Generating document with settings:", settings);
-     try {
-       await generateDocument(selectedQuestions, settings);
-       alert("Document generation initiated successfully! Check your downloads.");
-     } catch (err) {
-       console.error("Document generation failed:", err);
-       setError(`Document generation failed: ${err.message || 'Unknown error'}`);
-       alert(`Document generation failed: ${err.message || 'Unknown error'}`);
-     } finally {
-       setIsGenerating(false);
-     }
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
   };
 
-  // --- DERIVED STATE (useMemo) ---
-  const selectedQuestions = useMemo(() => {
-     if (!allQuestions || allQuestions.length === 0) return [];
-     try {
-         const questionMap = new Map(allQuestions.map(q => [q.id, q]));
-         return selectedQuestionIds.map(id => questionMap.get(id)).filter(Boolean);
-     } catch (mapError) {
-         console.error("Error creating selected questions map:", mapError);
-         return [];
-     }
+  const handleQuestionSelectionChange = (questionId, isChecked) => {
+    setSelectedQuestionIds(prevIds =>
+      isChecked ? [...prevIds, questionId] : prevIds.filter(id => id !== questionId)
+    );
+  };
+
+  const handleTopicPillClick = (topicValue) => {
+    setSearchTerm('');
+    setSelectedDOK(null);
+    setSelectedStandard(null);
+    setSelectedTopics([topicValue]);
+  };
+
+  const handleDOKPillClick = (dokValue) => {
+    setSearchTerm('');
+    setSelectedTopics([]);
+    setSelectedStandard(null);
+    setSelectedDOK(dokValue);
+  };
+
+  const handleStandardPillClick = (standardValue) => {
+    setSearchTerm('');
+    setSelectedTopics([]);
+    setSelectedDOK(null);
+    setSelectedStandard(standardValue);
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedTopics([]);
+    setSelectedDOK(null);
+    setSelectedStandard(null);
+  };
+  // --- End Event Handlers ---
+
+
+  // --- Helper for selected question details ---
+  const selectedQuestionsDetails = useMemo(() => {
+    return allQuestions.filter(q => selectedQuestionIds.includes(q.id));
   }, [selectedQuestionIds, allQuestions]);
 
+  // --- Calculate DOK Analysis ---
+  const dokAnalysis = useMemo(() => {
+    const totalSelected = selectedQuestionsDetails.length;
+    if (totalSelected === 0) {
+      return { total: 0, breakdown: [] };
+    }
 
-  // --- SIDE EFFECTS (useEffect) ---
-  useEffect(() => {
-    const loadData = async () => {
-      console.log("[App.js useEffect loadData] STARTING initial load...");
-      setIsLoading(true);
-      setError(null);
-      setFilterOptions({ standards: [], objectives: [], topics: [] });
-      try {
-        console.log("[App.js useEffect loadData] Calling fetchQuestions...");
-        const questions = await fetchQuestions();
-        console.log(`[App.js useEffect loadData] fetchQuestions returned ${questions ? questions.length : 'null/undefined'} questions.`);
+    const dokCounts = {};
+    selectedQuestionsDetails.forEach(question => {
+      const dokLevel = question.dok ?? 'N/A';
+      dokCounts[dokLevel] = (dokCounts[dokLevel] || 0) + 1;
+    });
 
-        setAllQuestions(questions || []);
-        setFilteredQuestions(questions || []);
+    const breakdown = Object.entries(dokCounts)
+      .map(([dok, count]) => ({
+        dok: dok,
+        count: count,
+        percentage: ((count / totalSelected) * 100).toFixed(1)
+      }))
+      .sort((a, b) => {
+        if (a.dok === 'N/A') return 1;
+        if (b.dok === 'N/A') return -1;
+        return parseFloat(a.dok) - parseFloat(b.dok);
+      });
 
-        if (questions && questions.length > 0) {
-            console.log("[App.js useEffect loadData] Calling fetchFilterOptions...");
-            const options = await fetchFilterOptions(questions);
-            console.log("[App.js useEffect loadData] fetchFilterOptions returned.");
-            setFilterOptions(options);
-        } else {
-             console.log("[App.js useEffect loadData] No questions fetched or empty array, skipping filter options.");
-        }
-        console.log("[App.js useEffect loadData] TRY block finished successfully.");
-      } catch (err) {
-        console.error("[App.js useEffect loadData] CATCH block error:", err);
-        setError(err.message || "Failed to load data.");
-        setAllQuestions([]);
-        setFilteredQuestions([]);
-      } finally {
-        console.log("[App.js useEffect loadData] FINALLY block running, setting isLoading to false.");
-        setIsLoading(false); // isLoading should now be set to false
-      }
-    };
-    loadData();
-  }, []); // Runs once on mount
-
-  useEffect(() => {
-     if (isLoading) return; // Prevent filtering until loaded
-     let result = [...allQuestions];
-     const { standard, learningObjective, keyword, topic } = filterCriteria;
-     if (standard) result = result.filter(q => q.standard === standard);
-     if (learningObjective) result = result.filter(q => q.learning_objective === learningObjective);
-     if (topic) result = result.filter(q => q.topic === topic);
-     if (keyword) {
-          const lowerKeyword = keyword.toLowerCase().trim();
-          if (lowerKeyword) {
-              result = result.filter(q =>
-                (q.question_text && q.question_text.toLowerCase().includes(lowerKeyword)) ||
-                (q.tags && Array.isArray(q.tags) && q.tags.some(k => k && k.toLowerCase().includes(lowerKeyword))) ||
-                (q.standard && q.standard.toLowerCase().includes(lowerKeyword)) ||
-                (q.learning_objective && q.learning_objective.toLowerCase().includes(lowerKeyword)) ||
-                (q.topic && q.topic.toLowerCase().includes(lowerKeyword))
-              );
-          }
-      }
-     setFilteredQuestions(result);
-  }, [filterCriteria, allQuestions, isLoading]); // Rerun if criteria, data, or loading state changes
+    return { total: totalSelected, breakdown: breakdown };
+  }, [selectedQuestionsDetails]);
 
 
-  // --- RETURN STATEMENT ---
+  // --- Render ---
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className={styles.appContainer}>
-        <header className={styles.appHeader}><h1>Math Question Generator</h1></header>
-        {isGenerating && <div className={styles.loadingOverlay}>Generating Document...</div>}
-        {error && !isLoading && <p className={`${styles.error} ${styles.globalError}`}>{error}</p>}
-        <div className={styles.mainContent}>
-          <aside className={styles.filterSidebar}>
-            <h2>Filters</h2>
-            <FilterPanel options={filterOptions} criteria={filterCriteria} onChange={handleFilterChange} disabled={isLoading || isGenerating} />
-          </aside>
-          <section className={styles.questionArea}>
-            <h2>Available Questions ({filteredQuestions.length})</h2>
-            {/* Show loading indicator correctly */}
-            {isLoading && <p>Loading questions...</p>}
-            {!isLoading && !error && allQuestions.length === 0 && <p>No questions found in the database.</p>}
-            {!isLoading && !error && allQuestions.length > 0 && filteredQuestions.length === 0 && <p>No questions match the current filters.</p>}
-            {!isLoading && !error && filteredQuestions.length > 0 && (
-              <QuestionList key={JSON.stringify(filterCriteria)} questions={filteredQuestions} selectedIds={selectedQuestionIds} onSelect={handleSelectQuestion} />
-            )}
-          </section>
-          <aside className={styles.selectedSidebar}>
-             <Droppable droppableId="selectedQuestions">
-              {(provided, snapshot) => (
-                <div ref={provided.innerRef} {...provided.droppableProps} className={`${styles.selectedListContainer} ${snapshot.isDraggingOver ? styles.draggingOver : ''}`}>
-                  <h2>Selected ({selectedQuestions.length})</h2>
-                  {selectedQuestions.length === 0 && <p className={styles.emptySelected}>Drag questions here or select using checkboxes.</p>}
-                  <SelectedQuestions questions={selectedQuestions} onRemove={handleRemoveSelected} />
-                  {provided.placeholder}
+    <div className="app-container">
+      <header className="app-header">
+        <h1>Math Question Generator</h1>
+      </header>
+
+      <main className="main-content">
+        {/* Filters Sidebar */}
+        <aside className="filters-sidebar">
+           <h2>Filters</h2>
+           {/* Keyword Search */}
+           <div className="filter-group">
+              <input type="search" placeholder="Search text, keywords..." value={searchTerm} onChange={handleSearchChange} />
+              <button onClick={handleResetFilters}>Reset Filters</button>
+           </div>
+           {/* Topic Checklist */}
+           <div className="filter-group">
+             <h3>Topic</h3>
+              {availableTopics.length > 0 ? (
+                <div className="topic-checklist">
+                  {availableTopics.map(topic => (
+                    <label key={topic}>
+                      <input type="checkbox" value={topic} checked={selectedTopics.includes(topic)} onChange={handleTopicChange} />
+                      {topic}
+                    </label>
+                  ))}
                 </div>
-               )}
-             </Droppable>
-            <div className={styles.generateControls}>
-                <button onClick={handleOpenSettings} disabled={selectedQuestions.length === 0 || isLoading || isGenerating} className={styles.generateButton}>
-                  Generate Document...
-                </button>
-            </div>
-          </aside>
-        </div>
-        {showSettingsModal && ( <DocumentSettingsModal onClose={() => setShowSettingsModal(false)} onGenerate={handleGenerateDocument} isGenerating={isGenerating} /> )}
-      </div>
-    </DragDropContext>
+              ) : (
+                 <p>{loading ? 'Loading topics...' : 'No topics available.'}</p>
+              )}
+           </div>
+
+           {/* Selection Analysis Section */}
+           <div className="selection-analysis filter-group">
+                <h3>Selection Analysis</h3>
+                {dokAnalysis.total === 0 ? (
+                    <p className="analysis-placeholder">Select questions to see DOK breakdown.</p>
+                ) : (
+                    <ul className="dok-breakdown-list">
+                        {dokAnalysis.breakdown.map(item => (
+                            <li key={item.dok} className="dok-breakdown-item">
+                                <span>DOK {item.dok}:</span>
+                                <span>{item.count} ({item.percentage}%)</span>
+                            </li>
+                        ))}
+                         <li className="dok-breakdown-total">
+                            <strong>Total Selected: {dokAnalysis.total}</strong>
+                         </li>
+                    </ul>
+                )}
+           </div>
+        </aside>
+
+        {/* Available Questions List */}
+        <section className="questions-list-container">
+          <h2>Available Questions ({filteredQuestions.length})</h2>
+          {loading && <p className="loading-message">Loading questions...</p>}
+          {error && <p className="error-message">{error}</p>}
+          {!loading && !error && (
+            <>
+              {filteredQuestions.length === 0 && <p>No questions match the current filters.</p>}
+              {filteredQuestions.map(question => {
+                const truncatedLO = question.learning_objective
+                  ? question.learning_objective.substring(0, 80) + (question.learning_objective.length > 80 ? '...' : '')
+                  : '';
+                const formattedQuestionText = parseMathText(question.question_text);
+
+                return (
+                  <div key={question.id} className="question-item">
+                    {/* Checkbox */}
+                    <input
+                        type="checkbox"
+                        checked={selectedQuestionIds.includes(question.id)}
+                        onChange={(e) => handleQuestionSelectionChange(question.id, e.target.checked)}
+                        aria-label={`Select question: ${question.question_text}`}
+                    />
+                    {/* Details */}
+                    <div className="question-details">
+                      <p>{formattedQuestionText}</p>
+                      {/* Metadata Pills/Buttons */}
+                      <div className="question-meta combination">
+                        <div className="meta-pills">
+                          {question.dok !== null && question.dok !== undefined && (
+                             <button className="pill-button dok-pill" onClick={() => handleDOKPillClick(question.dok)} title={`Filter by DOK: ${question.dok}`} >
+                                <BsLightning className="pill-icon" aria-hidden="true" /> DOK: {question.dok}
+                             </button>
+                          )}
+                          {question.standard && (
+                            <button className="pill-button standard-pill" onClick={() => handleStandardPillClick(question.standard)} title={`Filter by Standard: ${question.standard}`} >
+                              <BsBookmark className="pill-icon" aria-hidden="true" /> Std: {question.standard}
+                            </button>
+                          )}
+                          {question.topic && (
+                            <button className="pill-button topic-pill" onClick={() => handleTopicPillClick(question.topic)} title={`Filter by topic: ${question.topic}`} >
+                              <BsTag className="pill-icon" aria-hidden="true" /> Topic: {question.topic}
+                            </button>
+                          )}
+                        </div>
+                        {/* Learning Objective Text */}
+                        {question.learning_objective && <p className="meta-lo">{truncatedLO}</p>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </section>
+
+        {/* Selected Questions Panel */}
+        <aside className="selected-panel">
+           <h2>Selected ({selectedQuestionIds.length})</h2>
+           {selectedQuestionIds.length === 0 ? (
+             <p className="placeholder-text">Drag questions here or select using checkboxes.</p>
+           ) : (
+             <ul className="selected-items-list">
+               {selectedQuestionsDetails.map(question => (
+                 <li key={question.id} className="selected-item">
+                   <div className="selected-item-details">
+                     <p className="selected-item-text">{parseMathText(question.question_text)}</p> {/* Parse math here too */}
+                     <div className="selected-item-meta">
+                       DOK: {question.dok ?? 'N/A'}
+                       {question.topic && <span>Topic: {question.topic}</span>}
+                     </div>
+                   </div>
+                   <button onClick={() => handleQuestionSelectionChange(question.id, false)} className="remove-selected-btn" aria-label={`Remove selected question: ${question.question_text}`} title="Remove" >
+                     ×
+                   </button>
+                 </li>
+               ))}
+             </ul>
+           )}
+         </aside>
+      </main>
+    </div>
   );
 }
 

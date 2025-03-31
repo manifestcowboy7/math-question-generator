@@ -1,38 +1,621 @@
-.App {
+/* src/App.css */
+body {
+  font-family: sans-serif;
+  margin: 0;
+  color: #333;
+  background-color: #f4f7f6;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.app-header {
+  background-color: #333;
+  color: white;
+  padding: 1rem 2rem;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.main-content {
   display: flex;
-  flex-direction: column;
+  flex-grow: 1; /* Allows content to fill remaining height */
+  padding: 1.5rem;
+  gap: 1.5rem; /* Space between columns */
+}
+
+.filters-sidebar {
+  flex: 0 0 250px; /* Fixed width for filters */
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content; /* Make sidebar only as tall as its content */
+}
+
+.filters-sidebar h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.filter-group {
+  margin-bottom: 1.5rem;
+}
+
+.filter-group h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.filter-group input[type="text"],
+.filter-group input[type="search"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Include padding in width */
+  margin-bottom: 0.5rem;
+}
+
+.filter-group button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background-color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.filter-group button:hover {
+  background-color: #ddd;
+}
+
+.topic-checklist {
+  max-height: 200px; /* Limit height and allow scrolling */
+  overflow-y: auto;
+  border: 1px solid #eee;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.topic-checklist label {
+  display: block; /* Each item on new line */
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.topic-checklist input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+
+.questions-list-container {
+  flex: 1; /* Takes up remaining space */
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto; /* Allow scrolling if list is long */
+}
+
+.questions-list-container h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.question-item {
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0.5rem;
+  display: flex;
+  align-items: flex-start; /* Align checkbox with top of text */
+  gap: 0.75rem;
+}
+
+.question-item:last-child {
+  border-bottom: none;
+}
+
+.question-item input[type="checkbox"] {
+    margin-top: 0.25rem; /* Align checkbox slightly better */
+}
+
+.question-details p {
+    margin: 0 0 0.3rem 0;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.question-meta {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.question-meta span {
+    margin-right: 0.8rem;
+}
+
+
+.selected-panel {
+  flex: 0 0 300px; /* Fixed width */
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+.selected-panel h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.placeholder-text {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.loading-message,
+.error-message {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.loading-message {
+  background-color: #e0e0e0;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Simple feedback styles from previous version - can be removed if not needed */
+.feedback {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.correct {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.incorrect {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.selected-panel {
+  flex: 0 0 300px; /* Fixed width */
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content; /* Adjust height based on content */
+  max-height: calc(100vh - 10rem); /* Example max height, adjust as needed */
+  overflow-y: auto; /* Allow scrolling */
+}
+
+.selected-panel h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.placeholder-text {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+/* --- New Styles for Selected Items --- */
+.selected-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.selected-item {
+  border-bottom: 1px dashed #eee;
+  padding: 0.75rem 0;
+  display: flex;
+  justify-content: space-between; /* Push remove button to the right */
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.selected-item:last-child {
+  border-bottom: none;
+}
+
+.selected-item-details {
+  flex-grow: 1; /* Allow text to take available space */
+}
+
+.selected-item-text {
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.3;
+  /* Optional: Limit number of lines and add ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Show max 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-item-meta {
+  font-size: 0.75rem;
+  color: #555;
+  font-weight: bold; /* Make DOK stand out */
+}
+
+.selected-item-meta span {
+    margin-right: 0.5rem;
+    font-weight: normal; /* Normal weight for other meta */
+    color: #777;
+}
+
+
+.remove-selected-btn {
+  background: none;
+  border: none;
+  color: #cc0000;
+  cursor: pointer;
+  font-size: 1.1rem; /* Make 'x' slightly larger */
+  padding: 0 0.25rem;
+  line-height: 1; /* Ensure tight fit */
+  margin-left: 0.5rem; /* Space from text */
+}
+
+.remove-selected-btn:hover {
+  color: #ff0000;
+}
+
+/* Styles for Question List */
+.questions-list-container {
+  flex: 1;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.questions-list-container h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.question-item {
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.question-item:last-child {
+  border-bottom: none;
+}
+
+.question-item input[type="checkbox"] {
+    margin-top: 0.25rem;
+}
+
+.question-details p { /* Style for the main question text */
+    margin: 0 0 0.5rem 0; /* Add bottom margin to separate from meta */
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+/* --- Styles for Combination Metadata --- */
+.question-meta.combination {
+  /* Container for all metadata under a question */
+}
+
+.meta-pills {
+  display: flex; /* Arrange pills horizontally */
+  flex-wrap: wrap; /* Allow wrapping */
+  gap: 0.5rem; /* Space between pills */
+  margin-bottom: 0.4rem; /* Space between pills and LO text */
+}
+
+.pill {
+  font-size: 0.75rem;
+  font-weight: 500; /* Slightly bolder than normal text */
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px; /* Rounded corners */
+  background-color: #e9ecef; /* Default pill background */
+  color: #495057; /* Default pill text color */
+  white-space: nowrap; /* Prevent pills breaking mid-text */
+  line-height: 1.4;
+}
+
+/* Specific pill styles (customize colors as desired) */
+.dok-pill { background-color: #cfe2ff; color: #0a367e; }
+.standard-pill { background-color: #fff3cd; color: #664d03; }
+.topic-pill { background-color: #d1e7dd; color: #0f5132; }
+/* Add more specific pill styles if needed */
+
+.meta-lo { /* Style for the Learning Objective text */
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0; /* Remove default paragraph margins */
+  line-height: 1.3;
+  padding-top: 0.2rem; /* Small space above if pills wrap */
+}
+/* --- End Combination Metadata Styles --- */
+
+
+/* Styles for Selected Panel (No changes needed here from previous version) */
+.selected-panel {
+  flex: 0 0 300px;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  max-height: calc(100vh - 10rem);
+  overflow-y: auto;
+}
+/* ... (rest of selected panel styles: h2, placeholder-text, selected-items-list, selected-item, etc. remain the same) ... */
+
+
+/* Loading/Error Styles (No changes needed) */
+.loading-message,
+.error-message {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  text-align: center;
+}
+.loading-message { background-color: #e0e0e0; }
+.error-message { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* --- Styles for Question List Area --- */
+.questions-list-container { /* ... */ }
+.questions-list-container h2 { /* ... */ }
+.question-item { /* ... */ }
+.question-item input[type="checkbox"] { /* ... */ }
+.question-details p { /* ... */ margin: 0 0 0.5rem 0; }
+
+/* --- Styles for Combination Metadata --- */
+.question-meta.combination { /* ... */ }
+.meta-pills { /* ... */ display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem; }
+.meta-lo { /* ... */ font-size: 0.8rem; color: #666; margin: 0; line-height: 1.3; padding-top: 0.2rem; }
+
+/* --- Base Pill Styles (for both span and button) --- */
+.pill,
+.pill-button {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  line-height: 1.4;
+  display: inline-flex; /* Use flex for icon alignment */
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 0.3em; /* Space between icon and text */
+  border: none; /* Ensure no border by default */
 }
 
-.App-link {
-  color: #61dafb;
+/* --- Specific Pill Type Styles (Applied to both span and button) --- */
+.dok-pill { background-color: #cfe2ff; color: #0a367e; }
+.standard-pill { background-color: #fff3cd; color: #664d03; }
+.topic-pill { background-color: #d1e7dd; color: #0f5132; }
+/* Add more types if needed */
+
+/* --- Styles ONLY for Clickable Pill Buttons --- */
+.pill-button {
+  /* Reset specific button defaults if necessary (some might be inherited) */
+  background: none; /* Re-apply specific background using type class */
+  color: inherit; /* Re-apply specific color using type class */
+  font: inherit; /* Use font styles from base */
+  cursor: pointer;
+  text-align: left;
+  padding: 0.2rem 0.6rem; /* Re-apply padding */
+  margin: 0; /* Ensure no button margins */
+  /* Apply type-specific background/color via classes like .topic-pill */
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.pill-button:hover,
+.pill-button:focus {
+  filter: brightness(95%); /* Slightly darken on hover/focus */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1); /* Subtle focus ring */
+  outline: none; /* Remove default browser outline if using box-shadow */
+}
+
+/* --- Style for the Icons within pills/buttons --- */
+.pill-icon {
+  width: 1em;
+  height: 1em;
+  opacity: 0.8;
+}
+
+/* --- Styles for Question List Area --- */
+.questions-list-container { /* ... */ }
+.questions-list-container h2 { /* ... */ }
+.question-item { /* ... */ }
+.question-item input[type="checkbox"] { /* ... */ }
+.question-details p { /* ... */ margin: 0 0 0.5rem 0; }
+
+/* --- Styles for Combination Metadata --- */
+.question-meta.combination { /* ... */ }
+.meta-pills { /* ... */ display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem; }
+.meta-lo { /* ... */ font-size: 0.8rem; color: #666; margin: 0; line-height: 1.3; padding-top: 0.2rem; }
+
+/* --- Base Pill Styles (for both span and button) --- */
+/* Defines shape, font, flex for icon, etc. BUT NOT background/color */
+.pill,
+.pill-button {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  border: none; /* Reset border */
+  text-decoration: none; /* Reset text decoration */
+}
+
+/* --- Specific Pill Type Styles (Applied to both span and button) --- */
+/* Define UNIQUE background and text colors here */
+.dok-pill {
+  background-color: #cfe2ff; /* Light Blue */
+  color: #0a367e; /* Dark Blue text */
+}
+.standard-pill {
+  background-color: #fff3cd; /* Light Yellow */
+  color: #664d03; /* Dark Yellow/Brown text */
+}
+.topic-pill {
+  background-color: #d1e7dd; /* Light Green */
+  color: #0f5132; /* Dark Green text */
+}
+/* Add more types if needed with distinct colors */
+
+/* --- Styles ONLY for Clickable Pill Buttons --- */
+.pill-button {
+  /* Reset specific button defaults */
+  background: none; /* Remove default button background */
+  color: inherit; /* Inherit color from specific type class */
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.2rem 0.6rem; /* Re-apply padding */
+  margin: 0;
+  /* Re-apply the specific background/color using type classes */
+}
+.pill-button.dok-pill { background-color: #cfe2ff; color: #0a367e; }
+.pill-button.standard-pill { background-color: #fff3cd; color: #664d03; }
+.pill-button.topic-pill { background-color: #d1e7dd; color: #0f5132; }
+/* Make sure these rules exist to explicitly set the background/color ON the button */
+
+
+.pill-button:hover,
+.pill-button:focus {
+  filter: brightness(95%); /* Slightly darken on hover/focus */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+/* --- Style for the Icons within pills/buttons --- */
+.pill-icon {
+  width: 1em;
+  height: 1em;
+  opacity: 0.8;
+  /* Icon color will inherit from the pill's text color */
+}
+
+/* Optional: Adjust sup/sub styling if needed */
+sup, sub {
+  font-size: 0.75em; /* Make them slightly smaller than base text */
+  line-height: 0; /* Prevent impacting line height too much */
+  position: relative; /* Needed for vertical alignment */
+  vertical-align: baseline; /* Align with baseline */
+}
+
+sup {
+  top: -0.5em; /* Adjust vertical position for superscripts */
+}
+
+sub {
+  bottom: -0.25em; /* Adjust vertical position for subscripts */
+}
+
+.filters-sidebar {
+  flex: 0 0 250px;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  /* Allow sidebar to grow if analysis makes it taller */
+  /* Consider adding max-height and overflow-y: auto if needed */
+  /* max-height: calc(100vh - 4rem); */ /* Example */
+  /* overflow-y: auto; */
+}
+.filters-sidebar h2 { /* ... */ }
+.filter-group { /* ... */ margin-bottom: 1.5rem; }
+.filter-group h3 { /* ... */ margin-bottom: 0.75rem; font-size: 1rem; font-weight: 600;}
+/* ... (other filter group styles for input, button, checklist) ... */
+
+
+/* --- New Styles for Selection Analysis --- */
+.selection-analysis {
+    margin-top: 2rem; /* Add space above the analysis section */
+    border-top: 1px solid #eee; /* Optional separator line */
+    padding-top: 1.5rem; /* Space below the line */
+}
+
+.analysis-placeholder {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+}
+
+.dok-breakdown-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.dok-breakdown-item {
+    display: flex;
+    justify-content: space-between; /* Align label and value */
+    padding: 0.3rem 0;
+    border-bottom: 1px dashed #eee; /* Light separator between items */
+}
+.dok-breakdown-item:last-of-type { /* Avoid double border with total */
+   /* border-bottom: none; */ /* Remove if total is below */
+}
+
+
+.dok-breakdown-item span:first-child {
+    color: #333;
+    font-weight: 500;
+}
+.dok-breakdown-item span:last-child {
+    color: #555;
+}
+
+.dok-breakdown-total {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #ccc; /* Separator above total */
+    font-size: 0.9rem;
+}
+.dok-breakdown-total strong {
+    display: flex; /* Use flex to align total text */
+    justify-content: space-between;
 }
