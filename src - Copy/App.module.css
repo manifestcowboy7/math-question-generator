@@ -1,0 +1,180 @@
+/* src/App.module.css */
+.appContainer {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+  
+  .appHeader {
+    background-color: #282c34;
+    padding: 15px 25px;
+    color: white;
+    text-align: center;
+    flex-shrink: 0; /* Prevent header from shrinking */
+  }
+  
+  .mainContent {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden; /* Prevent overall page scroll, allow panels to scroll */
+    height: calc(100vh - 70px); /* Adjust based on header height */
+  }
+  
+  .filterSidebar, .selectedSidebar {
+    width: 280px;
+    padding: 20px;
+    border-right: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    overflow-y: auto; /* Allow scrolling within sidebars */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .selectedSidebar {
+      border-right: none;
+      border-left: 1px solid #e0e0e0;
+  }
+  
+  .filterSidebar h2, .selectedSidebar h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.25em;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+  }
+  
+  .questionArea {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto; /* Allow scrolling of question list */
+  }
+  
+  .questionArea h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+  }
+  
+  .selectedListContainer {
+      flex-grow: 1; /* Take remaining space in sidebar */
+      min-height: 150px; /* Ensure drop zone is visible */
+      padding: 5px;
+      background-color: #fff;
+      border: 1px dashed #ccc;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      /* Transition for background change */
+      transition: background-color 0.2s ease;
+  }
+  
+  .draggingOver {
+      background-color: #e9f5ff; /* Light blue background when dragging over */
+      border-color: #90caf9;
+  }
+  
+  
+  .generateControls {
+      margin-top: auto; /* Pushes controls to the bottom */
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      text-align: center;
+  }
+  
+  .generateControls p {
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #555;
+  }
+  
+  .generateButton {
+      padding: 12px 25px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      transition: background-color 0.2s ease, opacity 0.2s ease;
+  }
+  
+  .generateButton:disabled {
+      background-color: #adb5bd;
+      cursor: not-allowed;
+      opacity: 0.7;
+  }
+  
+  .generateButton:hover:not(:disabled) {
+      background-color: #0056b3;
+  }
+  
+  .error {
+    color: #dc3545;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    text-align: center;
+  }
+  
+  .globalError {
+    margin: 10px 20px; /* Add margin for global errors */
+  }
+  
+  
+  .loadingOverlay {
+      position: fixed; /* Or absolute if needed within a specific container */
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #333;
+      z-index: 1000; /* Ensure it's on top */
+  }
+  
+  .emptySelected {
+      text-align: center;
+      color: #888;
+      margin-top: 20px;
+      font-style: italic;
+  }
+  
+  
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .filterSidebar, .selectedSidebar {
+      width: 240px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .mainContent {
+      flex-direction: column;
+      height: auto; /* Allow content to determine height */
+      overflow: visible; /* Reset overflow */
+    }
+    .filterSidebar, .selectedSidebar, .questionArea {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid #e0e0e0;
+      max-height: none; /* Remove height limits */
+      overflow-y: visible; /* Reset overflow */
+    }
+     .selectedSidebar {
+      border-left: none;
+      min-height: 200px; /* Ensure selected area has some height */
+     }
+     .selectedListContainer {
+       min-height: 100px;
+     }
+  }

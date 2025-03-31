@@ -1,0 +1,99 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure modal is on top */
+  }
+  
+  .modalContent {
+    background-color: white;
+    padding: 25px 35px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px; /* Limit max width */
+  }
+  
+  .modalContent h2 {
+      margin-top: 0;
+      margin-bottom: 25px;
+      text-align: center;
+      color: #333;
+  }
+  
+  .formGroup {
+    margin-bottom: 20px;
+  }
+  
+  .formGroup label:not(.radioGroup label) { /* Exclude radio button labels */
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+  }
+  
+  .inputField {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+  }
+  
+  .radioGroup label {
+      margin-right: 20px;
+      font-weight: normal;
+      cursor: pointer;
+      display: inline-flex; /* Align radio button and text */
+      align-items: center;
+  }
+   .radioGroup input[type="radio"] {
+      margin-right: 6px;
+   }
+  
+  
+  .modalActions {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: 15px; /* Space between buttons */
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  }
+  
+  .button {
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+  }
+  
+  .cancelButton {
+    background-color: #6c757d;
+    color: white;
+  }
+  .cancelButton:hover:not(:disabled) {
+    background-color: #5a6268;
+  }
+  
+  
+  .generateButton {
+    background-color: #007bff;
+    color: white;
+  }
+   .generateButton:hover:not(:disabled) {
+      background-color: #0056b3;
+   }
+  
+  .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+  }
